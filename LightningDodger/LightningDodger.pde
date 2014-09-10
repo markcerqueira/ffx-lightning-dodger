@@ -37,6 +37,8 @@ void setup() {
   catch(AWTException e) {
     println(e);
   } 
+  
+  startWalking();
 }
 
 String colorToString(color c) {
@@ -58,16 +60,24 @@ int lightningBoltsDetectedSoFar = 0;
 int cooldown = 0;
 int ticks = 0;
 
-void draw() { 
-  ticks++;
-  
+int DODGE_DELAY = 2;
+int dodgeInDelay = 0;
+
+void draw() {   
   // TODO - for debugging in case this application GOES ROGUE!
-  if(ticks > 9000) {
+  ticks++;
+  // println(ticks);
+  if(ticks > 2000) {
      exit();
   }
   
-  if(cooldown == 0 && ticks % 2 == 0) {
-     moveTidus(); 
+  if(dodgeInDelay > 0) {
+      dodgeInDelay--;
+      
+      if(dodgeInDelay == 0) {
+        println("ATTEMPTING DODGE");
+             dodgeBolt();
+      }
   }
   
   PImage img = kinect.getVideoImage();
@@ -86,6 +96,8 @@ void draw() {
     return; 
   }
   
+  checkSteps();
+  
   // check each of the trackingPoints to see if they are white
   int whiteCount = 0;
   for(int i = 0; i < trackingPoints.length; i++) {
@@ -100,35 +112,43 @@ void draw() {
      lightningBoltsDetectedSoFar++; 
      println("Lightning detected! Total detections so far = " + lightningBoltsDetectedSoFar);
      cooldown = WHITE_COOLDOWN;
-     dodgeBolt();
+     dodgeInDelay = DODGE_DELAY;
   }
 }
 
-boolean moveUp = true;
-int MAX_STEPS = 100;
-int currentSteps = 0;
+int stepsTaken = 0;
+boolean walkingUp = true;
 
-void moveTidus() {
-  if(currentSteps < MAX_STEPS) {
-      currentSteps++;
-      return;
-  }
+void startWalking() {
+  robot.keyPress(KeyEvent.VK_W);  
+}
+
+void checkSteps() {
+    stepsTaken++;
+    
+    if(stepsTaken < 200) {
+       return; 
+    }
+    
+    stepsTaken = 0;
+    
+    robot.keyRelease(KeyEvent.VK_W);  
+    robot.keyRelease(KeyEvent.VK_Z);  
   
-  currentSteps = 0;
-  moveUp = !moveUp;
-  
-  if(moveUp) {
-     robot.keyPress(KeyEvent.VK_U);
-  } else {
-     robot.keyPress(KeyEvent.VK_D);
-  }  
+    walkingUp = !walkingUp;
+    
+    if(walkingUp) {
+      robot.keyPress(KeyEvent.VK_W);  
+    } else {
+      robot.keyPress(KeyEvent.VK_Z);  
+    }
 }
 
 void dodgeBolt() {
-  robot.keyRelease(KeyEvent.VK_U);  
-  robot.keyRelease(KeyEvent.VK_D);  
+  robot.keyRelease(KeyEvent.VK_W);  
+  robot.keyRelease(KeyEvent.VK_Z);
 
-  pressKey(KeyEvent.VK_X);
+  pressKey(KeyEvent.VK_N);
 }
 
 void pressKey(int c) {
@@ -140,5 +160,13 @@ void stop() {
   kinect.quit();
   
   super.stop();
+}
+
+
+void exit() {
+  robot.keyRelease(KeyEvent.VK_W);  
+  robot.keyRelease(KeyEvent.VK_Z);  
+  
+  super.exit();
 }
 
